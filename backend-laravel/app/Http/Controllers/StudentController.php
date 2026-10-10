@@ -400,7 +400,7 @@ class StudentController extends Controller
             ->first();
 
         return response()->json([
-            'kampus' => env('NAMA_KAMPUS', 'Universitas Contoh Nusantara'),
+            'kampus' => env('NAMA_KAMPUS', 'Universitas Islam Negeri Imam Bonjol Padang'),
             'peserta' => $p,
             'jadwal' => $jadwal,
             'qr' => SiwisHelper::qrDataUrl($p->nomor_peserta),
@@ -421,7 +421,7 @@ class StudentController extends Controller
             ->first();
 
         $qrDataUrl = SiwisHelper::qrDataUrl($p->nomor_peserta);
-        $kampus = env('NAMA_KAMPUS', 'Universitas Contoh Nusantara');
+        $kampus = env('NAMA_KAMPUS', 'Universitas Islam Negeri Imam Bonjol Padang');
 
         $html = view('kartu_pdf', [
             'p' => $p,

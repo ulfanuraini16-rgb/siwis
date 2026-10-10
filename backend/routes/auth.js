@@ -30,7 +30,7 @@ router.post('/login', wrap(async (req, res) => {
 }));
 
 router.get('/me', authenticate, wrap(async (req, res) => {
-  res.json({ user: req.user, kampus: process.env.NAMA_KAMPUS || 'Universitas Contoh Nusantara' });
+  res.json({ user: req.user, kampus: process.env.NAMA_KAMPUS || 'Universitas Islam Negeri Imam Bonjol Padang ' });
 }));
 
 // PUT /api/auth/password  { password_lama, password_baru }

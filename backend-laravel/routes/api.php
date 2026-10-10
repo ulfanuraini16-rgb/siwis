@@ -19,7 +19,8 @@ Route::get('/health', function () {
 
 // Authentication (Public)
 Route::get('/login', fn () => response()->json(['message' => 'Unauthenticated.'], 401))->name('login');
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/auth/admin/login', [AuthController::class, 'adminLogin'])->middleware('throttle:5,1');
 
 // Authenticated Routes
 Route::middleware('auth:sanctum')->group(function () {

@@ -6,7 +6,7 @@ export const useAuth = () => useContext(AuthCtx);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [kampus, setKampus] = useState('Universitas Contoh Nusantara');
+  const [kampus, setKampus] = useState('Universitas Islam Negeri Imam Bonjol Padang');
   const [loading, setLoading] = useState(!!getToken());
 
   useEffect(() => {
@@ -17,8 +17,9 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    const r = await api.post('/auth/login', { email, password });
+  const login = useCallback(async (email, password, role = 'mahasiswa') => {
+    const endpoint = role === 'admin' ? '/auth/admin/login' : '/auth/login';
+    const r = await api.post(endpoint, { email, password });
     setToken(r.token);
     setUser(r.user);
     return r.user;

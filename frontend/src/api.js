@@ -16,7 +16,7 @@ async function request(method, path, body, isForm = false) {
   }
   if (res.status === 401 && token && !path.startsWith('/auth/login')) {
     setToken(null);
-    window.location.href = '/login';
+    window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
     throw new Error('Sesi berakhir. Silakan login kembali.');
   }
   const ct = res.headers.get('content-type') || '';
