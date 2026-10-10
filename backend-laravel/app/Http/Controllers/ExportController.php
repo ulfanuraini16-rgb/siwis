@@ -194,7 +194,7 @@ class ExportController extends Controller
         $q = $request->query();
         $rows = SiwisHelper::queryPendaftar($q, ['exclude_draft' => true]);
         $keterangan = $this->deskripsiFilter($q);
-        $kampus = env('NAMA_KAMPUS', 'Universitas Contoh Nusantara');
+        $kampus = env('NAMA_KAMPUS', 'Universitas Islam Negeri Imam Bonjol Padang');
 
         $html = view('laporan_pdf', [
             'rows' => $rows,

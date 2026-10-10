@@ -93,7 +93,7 @@ export default function AppLayout({ role }) {
       </div>
       {confirmOut && (
         <Confirm title="Logout" message="Anda yakin ingin keluar dari SIWIS?" confirmText="Logout"
-          onCancel={() => setConfirmOut(false)} onConfirm={() => { logout(); nav('/login'); }} />
+          onCancel={() => setConfirmOut(false)} onConfirm={() => { logout(); nav(role === 'admin' ? '/admin/login' : '/login'); }} />
       )}
     </div>
   );

@@ -23,15 +23,42 @@ class AuthController extends Controller
         $user = User::query()
             ->select('users.*')
             ->leftJoin('mahasiswa as m', 'm.user_id', '=', 'users.id')
-            ->where('users.email', $identitas)
-            ->orWhere('m.nim', $identitas)
+            ->where(function ($query) use ($identitas) {
+                $query->where('users.email', $identitas)
+                    ->orWhere('m.nim', $identitas);
+            })
+            ->where('users.role', 'mahasiswa')
             ->first();
 
         if (!$user || !Hash::check($password, $user->password)) {
-            return response()->json(['message' => 'Email/NIM atau password salah.'], 401);
+            return response()->json(['message' => 'Akun tidak ditemukan'], 404);
         }
 
-        // Generate Sanctum token
+        return $this->createLoginResponse($user);
+    }
+
+    public function adminLogin(Request $request): JsonResponse
+    {
+        $email = trim((string) $request->input('email', ''));
+        $password = (string) $request->input('password', '');
+
+        if (!$email || !$password) {
+            return response()->json(['message' => 'Email dan password wajib diisi.'], 400);
+        }
+
+        $user = User::where('email', $email)
+            ->where('role', 'admin')
+            ->first();
+
+        if (!$user || !Hash::check($password, $user->password)) {
+            return response()->json(['message' => 'Akun tidak ditemukan'], 404);
+        }
+
+        return $this->createLoginResponse($user);
+    }
+
+    private function createLoginResponse(User $user): JsonResponse
+    {
         $token = $user->createToken('siwis_token')->plainTextToken;
 
         SiwisHelper::logActivity($user->id, "{$user->nama} ({$user->role}) login");
@@ -57,7 +84,7 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'nama' => $user->nama,
             ],
-            'kampus' => env('NAMA_KAMPUS', 'Universitas Contoh Nusantara'),
+            'kampus' => env('NAMA_KAMPUS', 'Universitas Islam Negeri Imam Bonjol Padang '),
         ]);
     }
 

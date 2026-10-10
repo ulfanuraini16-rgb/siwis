@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
 import AppLayout from './layouts/AppLayout.jsx';
 import Login from './pages/Login.jsx';
+import AdminLogin from './pages/AdminLogin.jsx';
 import { Loading } from './components/ui.jsx';
 
 import SDashboard from './pages/student/Dashboard.jsx';
@@ -29,7 +30,7 @@ import APengaturan from './pages/admin/Pengaturan.jsx';
 function Guard({ role, children }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to={role === 'admin' ? '/admin/login' : '/login'} replace />;
   if (user.role !== role) return <Navigate to={user.role === 'admin' ? '/admin' : '/mahasiswa'} replace />;
   return children;
 }
@@ -46,6 +47,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
 
       <Route path="/mahasiswa" element={<Guard role="mahasiswa"><AppLayout role="mahasiswa" /></Guard>}>
         <Route index element={<SDashboard />} />
