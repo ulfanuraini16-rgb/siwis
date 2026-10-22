@@ -60,6 +60,7 @@ function DataMahasiswa() {
   const toast = useToast();
   const [q, setQ] = useState('');
   const { data, error, loading, reload } = useFetch(`/admin/mahasiswa${q ? `?q=${encodeURIComponent(q)}` : ''}`);
+  const { data: programStudi, error: programStudiError, loading: programStudiLoading, reload: reloadProgramStudi } = useFetch('/program-studi');
   const [form, setForm] = useState(null);
   const [hapus, setHapus] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -74,6 +75,11 @@ function DataMahasiswa() {
     catch (e) { toast.error(e.message); } finally { setBusy(false); setHapus(null); }
   };
   const f = (k) => ({ value: form[k] ?? '', onChange: (e) => setForm({ ...form, [k]: e.target.value }) });
+  const programStudiValue = (item) => `${item.jenjang} - ${item.nama}`;
+  const programStudiValues = new Set((programStudi || []).map(programStudiValue));
+  const legacyProgramStudi = form?.program_studi && !programStudiValues.has(form.program_studi)
+    ? form.program_studi
+    : '';
   return (
     <>
       <div className="page-head"><input style={{ maxWidth: 300 }} placeholder="Cari NIM / nama" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -94,7 +100,23 @@ function DataMahasiswa() {
           <div className="form-grid">
             <Field label="NIM"><input {...f('nim')} /></Field><Field label="Nama lengkap"><input {...f('nama')} /></Field>
             <Field label="Email (juga untuk login)"><input type="email" {...f('email')} /></Field><Field label="Nomor HP"><input {...f('no_hp')} /></Field>
-            <Field label="Fakultas"><input {...f('fakultas')} /></Field><Field label="Program studi"><input {...f('program_studi')} /></Field>
+            <Field label="Fakultas"><input {...f('fakultas')} /></Field>
+            <Field label="Program studi">
+              <select
+                value={form.program_studi ?? ''}
+                disabled={programStudiLoading || programStudiError}
+                onChange={(e) => setForm({ ...form, program_studi: e.target.value })}
+              >
+                <option value="">Pilih program studi</option>
+                {legacyProgramStudi && <option value={legacyProgramStudi}>{legacyProgramStudi} (data lama)</option>}
+                {(programStudi || []).map((item) => {
+                  const value = programStudiValue(item);
+                  return <option key={item.id} value={value}>{value}</option>;
+                })}
+              </select>
+              {programStudiLoading && <span className="hint">Memuat program studi...</span>}
+              {programStudiError && <ErrorBox message={programStudiError} onRetry={reloadProgramStudi} />}
+            </Field>
             <Field label="IPK"><input type="number" step="0.01" min="0" max="4" {...f('ipk')} /></Field>
             <Field label="Status kelulusan"><select {...f('status_kelulusan')}><option>Lulus</option><option>Belum Lulus</option></select></Field>
             <Field label="Tahun masuk"><input type="number" {...f('tahun_masuk')} /></Field><Field label="Tahun lulus"><input type="number" {...f('tahun_lulus')} /></Field>

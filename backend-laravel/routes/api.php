@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\ProgramStudiController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,8 @@ Route::post('/auth/admin/login', [AuthController::class, 'adminLogin'])->middlew
 
 // Authenticated Routes
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/program-studi', [ProgramStudiController::class, 'index']);
+
     // Auth Profile & Password
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/password', [AuthController::class, 'changePassword']);
