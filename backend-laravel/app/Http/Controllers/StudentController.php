@@ -10,6 +10,7 @@ use App\Models\Notifikasi;
 use App\Models\Pembayaran;
 use App\Models\PendaftaranWisuda;
 use App\Models\PeriodeWisuda;
+use App\Models\ProgramStudi;
 use App\Services\SiwisHelper;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -89,9 +90,25 @@ class StudentController extends Controller
         $email = trim((string) $request->input('email', ''));
         $noHp = trim((string) $request->input('no_hp', ''));
         $judulSkripsi = trim((string) $request->input('judul_skripsi', ''));
+        $fakultas = trim((string) $request->input('fakultas', ''));
+        $programStudi = trim((string) $request->input('program_studi', ''));
+        $nim = trim((string) $request->input('nim', ''));
+        $nama = trim((string) $request->input('nama', ''));
+        $ipk = $request->input('ipk');
+        $tahunMasuk = $request->input('tahun_masuk') ?: null;
+        $tahunLulus = $request->input('tahun_lulus') ?: null;
 
+        if (!preg_match('/^[0-9]{6,20}$/', $nim)) {
+            return response()->json(['message' => 'NIM harus berupa angka (6-20 digit).'], 400);
+        }
+        if ($nama === '' || mb_strlen($nama) > 120) {
+            return response()->json(['message' => 'Nama wajib diisi dan maksimal 120 karakter.'], 400);
+        }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return response()->json(['message' => 'Format email tidak valid.'], 400);
+        }
+        if (mb_strlen($email) > 120) {
+            return response()->json(['message' => 'Email maksimal 120 karakter.'], 400);
         }
 
         if (!preg_match('/^[0-9+\-\s]{8,20}$/', $noHp)) {
@@ -102,12 +119,63 @@ class StudentController extends Controller
             return response()->json(['message' => 'Judul skripsi/tugas akhir wajib diisi.'], 400);
         }
 
-        $mhs->email = $email;
-        $mhs->no_hp = $noHp;
-        $mhs->judul_skripsi = $judulSkripsi;
-        $mhs->save();
+        if ($fakultas === '' || $programStudi === '') {
+            return response()->json(['message' => 'Fakultas dan program studi wajib dipilih.'], 400);
+        }
 
-        SiwisHelper::logActivity($request->user()->id, "{$mhs->nama} memperbarui data diri");
+        if (!is_numeric($ipk) || (float) $ipk < 0 || (float) $ipk > 4) {
+            return response()->json(['message' => 'IPK harus antara 0.00 - 4.00.'], 400);
+        }
+
+        foreach (['tahun_masuk' => $tahunMasuk, 'tahun_lulus' => $tahunLulus] as $label => $tahun) {
+            if ($tahun !== null && (!preg_match('/^[0-9]{4}$/', (string) $tahun) || (int) $tahun < 1900)) {
+                return response()->json(['message' => 'Tahun masuk dan tahun lulus harus berupa tahun 4 digit yang valid.'], 400);
+            }
+        }
+        if ($tahunMasuk !== null && $tahunLulus !== null && (int) $tahunLulus < (int) $tahunMasuk) {
+            return response()->json(['message' => 'Tahun lulus tidak boleh sebelum tahun masuk.'], 400);
+        }
+
+        if (Mahasiswa::where('nim', $nim)->where('id', '<>', $mhs->id)->exists()) {
+            return response()->json(['message' => 'NIM sudah digunakan mahasiswa lain.'], 400);
+        }
+        if ($request->user()->email !== $email && \App\Models\User::where('email', $email)->where('id', '<>', $request->user()->id)->exists()) {
+            return response()->json(['message' => 'Email sudah digunakan akun lain.'], 400);
+        }
+
+        $akademikTidakBerubah = $fakultas === $mhs->fakultas && $programStudi === $mhs->program_studi;
+        if (!$akademikTidakBerubah) {
+            if (!preg_match('/^(D3|S1|Profesi|S2|S3) - (.+)$/u', $programStudi, $matches)) {
+                return response()->json(['message' => 'Format program studi tidak valid. Pilih dari daftar yang tersedia.'], 400);
+            }
+
+            $programTerdaftar = ProgramStudi::where('jenjang', $matches[1])
+                ->where('nama', $matches[2])
+                ->where('fakultas', $fakultas)
+                ->exists();
+
+            if (!$programTerdaftar) {
+                return response()->json(['message' => 'Program studi tidak terdaftar pada fakultas yang dipilih.'], 400);
+            }
+        }
+
+        DB::transaction(function () use ($mhs, $request, $nim, $nama, $email, $noHp, $judulSkripsi, $fakultas, $programStudi, $ipk, $tahunMasuk, $tahunLulus) {
+            $mhs->nim = $nim;
+            $mhs->nama = $nama;
+            $mhs->email = $email;
+            $mhs->no_hp = $noHp;
+            $mhs->judul_skripsi = $judulSkripsi;
+            $mhs->fakultas = $fakultas;
+            $mhs->program_studi = $programStudi;
+            $mhs->ipk = (float) $ipk;
+            $mhs->tahun_masuk = $tahunMasuk;
+            $mhs->tahun_lulus = $tahunLulus;
+            $mhs->save();
+
+            $request->user()->update(['email' => $email, 'nama' => $nama]);
+        });
+
+        SiwisHelper::logActivity($request->user()->id, "{$nama} memperbarui data diri");
 
         return response()->json(['message' => 'Data diri berhasil disimpan.']);
     }
